@@ -25,8 +25,8 @@ import static org.mockito.BDDMockito.given;
 //import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.document;
 import static org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders.*;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
+import static org.springframework.restdocs.payload.PayloadDocumentation.*;
+import static org.springframework.restdocs.request.RequestDocumentation.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(RestDocumentationExtension.class)
@@ -48,11 +48,28 @@ class BeerControllerTest {
     void getBeerById() throws Exception {
         given(beerRepository.findById(any())).willReturn(Optional.of(Beer.builder().build()));
 
-        mockMvc.perform(get("/api/v1/beer/{beerId}", UUID.randomUUID().toString()).accept(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/beer/{beerId}", UUID.randomUUID().toString())
+                .param("iscold", "yes")
+                .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andDo(document("v1/beer", pathParameters(
-                        parameterWithName("beerId").description("UUID of desired beer to get")
-                )));
+                .andDo(document("v1/beer",
+                        pathParameters(
+                                parameterWithName("beerId").description("UUID of desired beer to get")
+                        ),
+                        requestParameters(
+                                parameterWithName("iscold").description("Is Beer Cold Query param")
+                        ),
+                        responseFields(
+                                fieldWithPath("id").description("Id of Beer"),
+                                fieldWithPath("version").description("Version number"),
+                                fieldWithPath("createdDate").description("Date of creation"),
+                                fieldWithPath("lastModifiedDate").description("Date of last modification"),
+                                fieldWithPath("beerName").description("Name of the beer"),
+                                fieldWithPath("beerStyle").description("Style if the beer"),
+                                fieldWithPath("upc").description("UPC of the beer"),
+                                fieldWithPath("price").description("Unit price"),
+                                fieldWithPath("quantityOnHand").description("Quantity on Hand")
+                        )));
     }
 
     @Test
@@ -63,7 +80,19 @@ class BeerControllerTest {
         mockMvc.perform(post("/api/v1/beer/")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(beerDtoJson))
-                .andExpect(status().isCreated());
+                .andExpect(status().isCreated())
+                .andDo(document("v1/beer",
+                    requestFields(
+                            fieldWithPath("id").ignored(),
+                            fieldWithPath("version").ignored(),
+                            fieldWithPath("createdDate").ignored(),
+                            fieldWithPath("lastModifiedDate").ignored(),
+                            fieldWithPath("beerName").description("Name of the beer"),
+                            fieldWithPath("beerStyle").description("Style if the beer"),
+                            fieldWithPath("upc").description("UPC of the beer").attributes(),
+                            fieldWithPath("price").description("Unit price"),
+                            fieldWithPath("quantityOnHand").ignored()
+                    )));
     }
 
     @Test
